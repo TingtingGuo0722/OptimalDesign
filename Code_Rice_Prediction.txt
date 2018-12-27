@@ -1,0 +1,140 @@
+##########Rice_Prediction############
+##########Rice_Prediction############
+##########Rice_Prediction############
+##########Rice_Prediction############
+
+library("MASS")
+library("BGLR")
+library("sommer")
+library("cluster")
+library("STPGA")
+setwd("/home/guotingting/R/Rice/")
+#setwd("F:/Manuscript/Writing/All The Figures and Tables MoP_1/Fig.5.New/Input_Files/")
+source("Code_FURS.txt")
+
+rr=read.table("Pheno.sanya.txt",header=T,sep="")
+rr=rr[1:1439,];
+kina=read.table("Matrix_Hybrid_Add_Define1.txt",header=F,sep="")
+kind=read.table("Matrix_Hybrid_Dom_Define1.txt",header=F,sep="")
+Pheno=rr;
+
+kina=as.matrix(kina);
+kind=as.matrix(kind);
+
+rownames(kina)=Pheno$ID;
+colnames(kina)=Pheno$ID;
+rownames(kind)=Pheno$ID;
+colnames(kind)=Pheno$ID;
+r11=numeric();
+r22=numeric();
+r33=numeric();
+r44=numeric();
+tr=9;
+
+for(i in 1:30)
+{
+  v=sort(sample(1439,863));
+  kina_sub=kina[v,v];
+  kind_sub=kind[v,v];
+  yyt=Pheno[v,];
+  sam=sample(yyt$ID,43);
+  which1=yyt$ID%in%sam; which2=!which1;
+  
+  y0=yyt[,tr]; 
+  y0[which2]=NA; 
+  ETA5=list(list(K=kina_sub,model='RKHS'),list(K=kind_sub,model='RKHS'))
+  nIter=1000;
+  burnIn=100;
+  fm1=BGLR(y=y0,ETA=ETA5,nIter=nIter,burnIn=burnIn)
+  r1=cor(fm1$yHat[which2],yyt[,tr][which2])
+  r11=c(r11,r1);
+  
+  if(tr==7) {sigma_a=3.57;sigma_d=0.81};
+  if(tr==8) {sigma_a=19.1;sigma_d=3.93};
+  if(tr==9) {sigma_a=44.03;sigma_d=9.16};
+  if(tr==11) {sigma_a=0.12;sigma_d=0.02};
+  
+  ####PAM##################################################################################################
+  COV=sigma_a*kina_sub+sigma_d*kind_sub;
+  c.mat <- 1- cov2cor(COV)
+  clust.result <- pam(x=c.mat,k=length(sam),diss=TRUE)
+  t.mat=apply(c.mat,1,sum)
+  center <- clust.result$medoids
+  sam=center;
+  
+  which1=yyt$ID%in%sam; which2=!which1;
+  y0=yyt[,tr];
+  y0[which2]=NA;
+  ETA5=list(list(K=kina_sub,model='RKHS'),list(K=kind_sub,model='RKHS'))
+  nIter=1000;
+  burnIn=100;
+  fm1=BGLR(y=y0,ETA=ETA5,nIter=nIter,burnIn=burnIn)
+  r2=cor(fm1$yHat[which2],yyt[,tr][which2])
+  r22=c(r22,r2);
+  
+  ########################CDMean & PEVMean#################################################################
+  K=COV;
+  ListTrain1<-GenAlgForSubsetSelectionNoTest(P=solve(K+1e-6*diag(ncol(K))),ntoselect=length(sam), InitPop=NULL,
+                                             npop=10, nelite=3, mutprob=.5, mutintensity = 1,
+                                             niterations=20,minitbefstop=10, tabu=F,tabumemsize = 0,plotiters=F,
+                                             lambda=1e-5,errorstat="CDMEANMM", mc.cores=3)
+  
+  ListTrain2<-GenAlgForSubsetSelectionNoTest(P=solve(K+1e-6*diag(ncol(K))),ntoselect=length(sam), InitPop=NULL,
+                                             npop=10, nelite=3, mutprob=.5, mutintensity = 1,
+                                             niterations=20,minitbefstop=10, tabu=F,tabumemsize = 0,plotiters=F,
+                                             lambda=1e-5,errorstat="PEVMEANMM", mc.cores=3)
+  
+  sam=as.vector(ListTrain1[[1]]);
+  which1=yyt$ID%in%sam; which2=!which1;
+  
+  y0=yyt[,tr];
+  y0[which2]=NA;
+  ETA5=list(list(K=kina_sub,model='RKHS'),list(K=kind_sub,model='RKHS'))
+  nIter=1000;
+  burnIn=100;
+  fm1=BGLR(y=y0,ETA=ETA5,nIter=nIter,burnIn=burnIn)
+  r3=cor(fm1$yHat[which2],yyt[,tr][which2])
+  r33=c(r33,r3);
+  
+  ############PEVMean
+  sam=as.vector(ListTrain2[[1]]);
+  which1=yyt$ID%in%sam; which2=!which1;
+  
+  y0=yyt[,tr];
+  y0[which2]=NA;
+  ETA5=list(list(K=kina_sub,model='RKHS'),list(K=kind_sub,model='RKHS'))
+  nIter=1000;
+  burnIn=100;
+  fm1=BGLR(y=y0,ETA=ETA5,nIter=nIter,burnIn=burnIn)
+  r4=cor(fm1$yHat[which2],yyt[,tr][which2])
+  r44=c(r44,r4);
+  
+  # ####FURS#######################################################################################
+  # tune=0.3;
+  # COV=kina_sub;
+  # COV=cov2cor(COV)
+  # COV[COV>tune] = 1
+  # COV[COV<tune] = 0
+  # center <- FURS(COV,length(sam),FALSE)
+  # sam=center;
+  # 
+  # which1=yyt$ID%in%sam; which2=!which1;
+  # y0=yyt[,tr]; 
+  # y0[which2]=NA; 
+  # ETA5=list(list(K=kina_sub,model='RKHS'),list(K=kind_sub,model='RKHS'))
+  # nIter=1000;
+  # burnIn=100;
+  # fm1=BGLR(y=y0,ETA=ETA5,nIter=nIter,burnIn=burnIn)
+  # r3=cor(fm1$yHat[which2],yyt[,tr][which2])
+  # r33=c(r33,r3);
+}
+
+mean(r11,na.rm=T)
+mean(r22,na.rm=T)
+mean(r33,na.rm=T)
+mean(r44,na.rm=T)
+
+output=cbind(r11,r22,r33,r44);
+colnames(output)=c("Random","PAM","CDMean","PEVMean");
+write.table(output,file="Rice_HT_CDMean_PEVMean.txt",quote=F,col.names=T,
+            row.names=F)

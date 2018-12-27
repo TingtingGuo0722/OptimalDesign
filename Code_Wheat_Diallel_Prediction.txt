@@ -1,0 +1,326 @@
+#########################################Wheat_Diallel############################################################
+#########################################Wheat_Diallel############################################################
+#########################################Wheat_Diallel############################################################
+#########################################Wheat_Diallel############################################################
+
+
+setwd("F:/Manuscript/Writing/All The Figures and Tables MoP_1/Fig.4.New/Input_Files/")
+
+g11_=c("M6","M9","M5","M14","F61","F115","M8","M15","F3","F90","F100","F67","F105","M7","F104","F65","F84","M13","F64","M2",
+       "F62","M10","F106","F37","F66","M11","F103","F85","F101","M12","F24","F58","F102","F114","F120","F2");
+
+g22_=c("F97","F6","F12","F99","F20","F60","F1","M1","F22","F83","F44","F86","F32","F71","F41","F119","F14",
+       "F98","F91","F96","F16","F39","F7","F46","F75","F77","F107","F59","F89","F95","F26","F42","F47","F8","F80","F118");
+
+
+################################wheat##Diallel##n=72##prediction##############################################
+
+source("Code_diag.txt")
+source("Code_DivRank.txt")
+source("Code_FURS.txt")
+library("plyr")
+library("BGLR")
+library("sommer")
+library("STPGA")
+library("cluster")
+################################Rank of Inbreds#########################
+rr=read.table("Input_to_R.txt",header=T,sep="")
+rr.1=matrix(999,72,72)
+c=1;
+for(i in 1:72)
+{
+  for(j in i:72)
+  {
+    rr.1[i,j]=rr[c,3];
+    
+    rr.1[j,i]=rr.1[i,j];
+    c=c+1;
+  }
+}
+DTA=rr.1;
+rownames(DTA)=rr[1:72,2];
+colnames(DTA)=rr[1:72,2];
+diss=as.dist(1-cov2cor(DTA))
+v=hclust(diss)
+
+t=hclust(diss,method="centroid")
+rank=t$labels[t$order];
+
+M=DTA[g11_,g11_];
+diss=as.dist(1-cov2cor(M))
+v=hclust(diss)
+t=hclust(diss,method="centroid")
+M_rank=t$labels[t$order];  
+
+FM=DTA[g22_,g22_];  
+diss=as.dist(1-cov2cor(FM))
+v=hclust(diss)
+t=hclust(diss,method="centroid")
+FM_rank=t$labels[t$order];
+
+rank=c(rev(FM_rank),M_rank);
+#########################################################################
+data=matrix(999,2556,2);c=1;
+for (i in 1:71)
+{
+  for(j in (i+1):72)
+  {
+    data[c,1]=rank[i];
+    data[c,2]=rank[j];
+    c=c+1;
+  }
+}
+
+
+origin=data.frame(V1=c(paste("F",1:120,sep=""),paste("M",1:15,sep="")),V2=c(1:135))
+data1=data.frame(V1=data[,1]);
+data2=data.frame(V1=data[,2]);
+plyr1=join(data1,origin,by="V1");
+plyr2=join(data2,origin,by="V1");
+Newset=cbind(plyr1[,2],plyr2[,2]);
+Newset.1=cbind(apply(Newset,1,min),apply(Newset,1,max))
+Newset.2=paste(Newset.1[,1],Newset.1[,2],sep="x");
+Newset.1=cbind(Newset.1,Newset.2);
+
+ID=read.table("ID.txt",header=F,sep="")
+Pheno_total=read.table("Pheno_9180.txt",header=F,sep="")
+Geno_A=read.table("Geno_A_9180_2560.txt",header=F,sep="")
+Geno_D=read.table("Geno_D_9180_2560.txt",header=F,sep="")
+colnames(Pheno_total)="phe";
+Pheno_tot=cbind(ID,Pheno_total);
+row.names(Pheno_tot)=Pheno_tot$V3;
+
+Pheno_sub=Pheno_tot[Newset.2,];
+#Pheno_sub=read.table("F:/Manuscript/Figs/Heatmap/Wheat/Pheno_Sub_True_Value.txt",header=F,sep="")
+
+
+row.names(Geno_A)=Pheno_tot$V3;
+Geno_A=Geno_A[,-1];
+row.names(Geno_D)=Pheno_tot$V3;
+Geno_D=Geno_D[,-1];
+GenoA_sub=Geno_A[Newset.2,];
+GenoD_sub=Geno_D[Newset.2,];
+
+
+y=Pheno_sub[,4];
+Geno_A_72=GenoA_sub;
+Geno_D_72=GenoD_sub;
+################################wheat##Diallel##n=72##prediction
+p1p2=matrix(999,2556,2)
+c=1;
+for(i in 1:71){
+  for(j in (i+1):72){
+    p1p2[c,1]=i;
+    p1p2[c,2]=j;
+    c=c+1;
+  }
+}
+
+colnames(p1p2)=c("P1","P2")  
+
+rownames(Geno_A_72)=1:2556;
+AA=A.mat(Geno_A_72)
+DD=D.mat(Geno_A_72)
+#########################################################
+it=100;
+u1=30;
+u2=30;
+vv=u1+u2;
+cc=vv/2;
+##########################################################################################
+r11=numeric();r22=numeric(); r33=numeric(); r44=numeric();r55=numeric();
+
+for (m in 1:it)
+{ 
+  ##################################  
+  pp1=sample(1:36,u1,replace=F);
+  pp2=sample(37:72,u2,replace=F);
+  yy=data.frame(ID=c(1:2556),p1=p1p2[,1],p2=p1p2[,2],tr=y);
+  yy.1=yy[which(yy$p1%in%pp1 & yy$p2%in%pp1),]; yy.1$Q1=1;yy.1$Q2=0;yy.1$Q3=0;
+  yy.2=yy[which(yy$p1%in%pp2 & yy$p2%in%pp2),]; yy.2$Q1=0;yy.2$Q2=1;yy.2$Q3=0;
+  yy.3=yy[which((yy$p1%in%pp1 & yy$p2%in%pp2)|(yy$p2%in%pp1 & yy$p1%in%pp2) ),]; yy.3$Q1=0;yy.3$Q2=0;yy.3$Q3=1;
+  
+  yy=rbind(yy.1,yy.2,yy.3);
+  yy=yy[order(yy$ID),];
+  
+  IDE=yy$ID;
+  geno1a=Geno_A_72[IDE,];
+  geno1d=Geno_D_72[IDE,];
+  
+  AA1=AA[IDE,IDE];
+  DD1=DD[IDE,IDE];
+  rownames(AA1)=c(1:(vv*(vv-1)/2));colnames(AA1)=c(1:(vv*(vv-1)/2));
+  
+  rownames(geno1a)=c(1:(vv*(vv-1)/2));rownames(geno1d)=c(1:(vv*(vv-1)/2));
+  
+  yya=data.frame(ID=c(1:(vv*(vv-1)/2)),tr=yy[,4],yy[,5:7]); 
+  yyt=yya;
+  COV=0.06*AA1+0.02*DD1;
+  ##########################################
+  mat=matrix(999,vv,vv);r=1;
+  for (mm in 1:(vv-1))
+  {
+    for(nn in (mm+1):(vv))
+    {
+      mat[mm,nn]=c(1:(vv*(vv-1)/2))[r];
+      mat[nn,mm]=mat[mm,nn];
+      r=r+1;
+    }
+  }
+  row_name=c(1:(vv));
+  mat=mat[row_name,row_name];
+  #########Border####################################################################################
+  yyt=yya;
+  
+  IDN=numeric();set=rbind(c(1:(vv-1)),c(2:(vv)));         ###border
+  for(ii in c(1:(vv-1))){
+    IDN=c(IDN,mat[set[1,ii],set[2,ii]])
+  }
+  
+  IDB=numeric();set=rbind(c(1:cc,1:cc),c((vv):(cc+1),(cc+1):(vv)));   ####center
+  for(ii in c(1:(vv))){
+    IDB=c(IDB,mat[set[1,ii],set[2,ii]])
+  }
+  
+  IDN=IDN[seq(1,(vv-1),2)];
+  IDB=IDB[1:round(cc/2,0)];
+  
+  sam=sort(c(IDN,IDB));
+  which1=yyt$ID%in%sam; which2=!which1;
+  
+  yNa=yyt[,2]; whichNa=which2;
+  yNa[whichNa]=NA
+  
+  #ETA5=list(list(K=AA1,model='RKHS'),list(K=DD1,model='RKHS'))
+  ETA5=list(list(X=geno1a,model='BL'),list(X=geno1d,model='BL'))
+  nIter=1000;
+  burnIn=100;
+  #fm1=BGLR(y=yNa,ETA=ETA5,nIter=nIter,burnIn=burnIn)
+  #r1=cor(fm1$yHat[fm1$whichNa],yyt[,2][whichNa])
+  #r11=c(r11,r1);
+  
+  ########################random#################
+  yyt=yya;
+  sam=sample(c(1:(dim(yyt)[1])),length(sam));
+  which1=yyt$ID%in%sam; which2=!which1;
+  
+  yNa=yyt[,2]; whichNa=which2;
+  yNa[whichNa]=NA
+  
+  ETA5=list(list(X=geno1a,model='BL'),list(X=geno1d,model='BL'))
+  #fm1=BGLR(y=yNa,ETA=ETA5,nIter=nIter,burnIn=burnIn)
+  #r2=cor(fm1$yHat[fm1$whichNa],yyt[,2][whichNa])
+  #r22=c(r22,r2);
+  
+  ########################CDMean & PEVMean#################################################################
+  K=COV;
+  
+  ListTrain1<-GenAlgForSubsetSelectionNoTest(P=solve(K+1e-6*diag(ncol(K))),ntoselect=length(sam), InitPop=NULL,
+                                             npop=10, nelite=3, mutprob=.5, mutintensity = 1,
+                                             niterations=20,minitbefstop=10, tabu=F,tabumemsize = 0,plotiters=F,
+                                             lambda=1e-5,errorstat="CDMEANMM", mc.cores=3)
+  
+  ListTrain2<-GenAlgForSubsetSelectionNoTest(P=solve(K+1e-6*diag(ncol(K))),ntoselect=length(sam), InitPop=NULL,
+                                             npop=10, nelite=3, mutprob=.5, mutintensity = 1,
+                                             niterations=20,minitbefstop=10, tabu=F,tabumemsize = 0,plotiters=F,
+                                             lambda=1e-5,errorstat="PEVMEANMM", mc.cores=3)
+  
+  sam=as.vector(ListTrain1[[1]]);
+  which1=yyt$ID%in%sam; which2=!which1;
+  yyt=yya;
+  
+  y0=yyt[,2];
+  y0[which2]=NA; 
+  
+  ETA5=list(list(X=geno1a,model='BL'),list(X=geno1d,model='BL'))
+  fm1=BGLR(y=y0,ETA=ETA5,nIter=nIter,burnIn=burnIn)
+  r3=cor(fm1$yHat[which2],yyt[,2][which2])
+  r33=c(r33,r3);
+  
+  ############PEVMean
+  sam=as.vector(ListTrain2[[1]]);
+  which1=yyt$ID%in%sam; which2=!which1;
+  yyt=yya;
+  
+  y0=yyt[,2];
+  y0[which2]=NA; 
+  ETA5=list(list(X=geno1a,model='BL'),list(X=geno1d,model='BL'))
+  fm1=BGLR(y=y0,ETA=ETA5,nIter=nIter,burnIn=burnIn)
+  r4=cor(fm1$yHat[which2],yyt[,2][which2])
+  r44=c(r44,r4);
+  
+  # ########################KM#################
+  # yyt=yya;
+  # COV=0.06*AA1+0.02*DD1;
+  # c.mat <- 1- cov2cor(COV)
+  # clust.result <- pam(x=c.mat,k=length(sam),diss=TRUE)
+  # center <- clust.result$medoids
+  # sam=yyt$ID[as.numeric(center)];
+  # 
+  # which1=yyt$ID%in%sam; which2=!which1;
+  # yNa=yyt[,2]; whichNa=which2;
+  # yNa[whichNa]=NA
+  # 
+  # ETA5=list(list(X=geno1a,model='BL'),list(X=geno1d,model='BL'))
+  # nIter=1000;
+  # burnIn=100;
+  # fm1=BGLR(y=yNa,ETA=ETA5,nIter=nIter,burnIn=burnIn)
+  # r3=cor(fm1$yHat[fm1$whichNa],yyt[,2][whichNa])
+  # r33=c(r33,r3);
+  # ########################DR#################
+  # yyt=yya;
+  # m3=COV;
+  # diag(m3)=0;
+  # m3[m3<0]=0;
+  # colnames(m3) <- 1:nrow(m3);
+  # rownames(m3) <- 1:ncol(m3);
+  # 
+  # check_zero <- which(colSums(m3)==0);
+  # if(length(check_zero)>0){
+  #   m3 <- m3[-check_zero,-check_zero]
+  # }
+  # Div.output=DivRank(m3,0.9,0.25);
+  # Rank=Div.output$divrank;
+  # sam=yyt$ID[as.numeric(Rank[1:length(sam)])];
+  # 
+  # which1=yyt$ID%in%sam; which2=!which1;
+  # yNa=yyt[,2]; whichNa=which2;
+  # yNa[whichNa]=NA
+  # 
+  # library("BGLR")
+  # ETA5=list(list(X=geno1a,model='BL'),list(X=geno1d,model='BL'))
+  # nIter=1000;
+  # burnIn=100;
+  # fm1=BGLR(y=yNa,ETA=ETA5,nIter=nIter,burnIn=burnIn)
+  # r4=cor(fm1$yHat[fm1$whichNa],yyt[,2][whichNa])
+  # r44=c(r44,r4);
+  # ########################FURS#################
+  # tune=0;
+  # tmp=cov2cor(COV)
+  # tmp[tmp>tune] = 1
+  # tmp[tmp<tune] = 0
+  # center <- FURS(tmp,45,FALSE)
+  # sam=yyt$ID[as.numeric(center)];
+  # 
+  # which1=yyt$ID%in%sam; which2=!which1;
+  # yNa=yyt[,2]; whichNa=which2;
+  # yNa[whichNa]=NA
+  # 
+  # library("BGLR")
+  # ETA5=list(list(X=geno1a,model='BL'),list(X=geno1d,model='BL'))
+  # nIter=1000;
+  # burnIn=100;
+  # fm1=BGLR(y=yNa,ETA=ETA5,nIter=nIter,burnIn=burnIn)
+  # r5=cor(fm1$yHat[fm1$whichNa],yyt[,2][whichNa])
+  # r55=c(r55,r5); 
+}
+
+mean(r11,na.rm=T)
+mean(r22,na.rm=T)
+mean(r33,na.rm=T)
+mean(r44,na.rm=T)
+
+output=cbind(r11,r22,r33,r44);
+colnames(output)=c("MaxCD","Random","CDMean","PEVMean");
+write.table(output,file="Wheat_GY_CDMean_PEVMean.txt",quote=F,col.names=T,
+            row.names=F)

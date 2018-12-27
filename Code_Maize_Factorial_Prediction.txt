@@ -1,0 +1,263 @@
+##########Maize_Prediction_Factorial############
+##########Maize_Prediction_Factorial############
+##########Maize_Prediction_Factorial############
+##########Maize_Prediction_Factorial############
+
+library("MASS")
+library("BGLR")
+library("sommer")
+library("cluster")
+library("STPGA")
+library("rrBLUP")
+library("corpcor")
+
+setwd("F:/Manuscript/Writing/All The Figures and Tables MoP_1/Fig.S7.Add/Factorial/")
+source("Code_diag.txt")
+source("Code_DivRank.txt")
+source("Code_FURS.txt")
+
+rr=read.table("rrBLUP_input_276_276.txt",header=T,sep="")
+p1p2=read.table("P1P2_NO.txt",header=T,sep="")
+pp=read.table("Parents.txt",header=F,sep="");
+kina=read.table("KinFa_GVCBLUP.txt",header=T,sep="")
+kind=read.table("KinFd_GVCBLUP.txt",header=T,sep="")
+
+rowInd = c("B97","MS71","Oh43","OH7B","Mo17","B73","Ky21","M162W","M37W","Tx303","Mo18W","CML103",
+           "CML322","CML277","Tzi8","CML247","CML333","NC358","NC350","CML52","CML69","Ki11","CML228","Ki3");
+
+.Last.Random.seed <- .Random.seed 
+
+addTaskCallback( function(expr, val, ok, visible){ 
+  if(!isTRUE( all.equal(.Last.Random.seed, .Random.seed)) ) { 
+    .Last.Random.seed <- .Random.seed 
+  } 
+  TRUE 
+}) 
+
+
+
+
+t0=numeric();
+for(i in 1:24){
+  t=which(rowInd[i]==pp$V3);
+  t0=c(t0,t);
+}
+##########################
+if(T){
+  p5=cbind(p1p2,m3=rr$Cross)
+  pp5=pp[t0,];
+  IDI=matrix(999,276,6);
+  c=1;
+  for(i in 1:23)
+  {
+    for(j in (i+1):24)
+    {  
+      IDI[c,1]=pp5[i,2];
+      IDI[c,2]=pp5[j,2];
+      IDI[c,3]=as.character(pp5[i,3]);
+      IDI[c,4]=as.character(pp5[j,3]);
+      IDI[c,5]=paste(IDI[c,3],IDI[c,4],sep="x");
+      IDI[c,6]=paste(IDI[c,4],IDI[c,3],sep="x");
+      c=c+1;
+    }
+  }
+  
+  new=NULL;
+  for(i in 1:276)
+  {
+    new0=c(IDI[i,5],IDI[i,6]);
+    new=c(new,new0)
+  }
+  
+  overlap=new[new%in%p5$m3];
+  rownames(rr)=rr$Cross;
+  rr_new=rr[overlap,]
+  
+  rr=rr_new;
+}
+##########################
+rownames(kina)=kina$Cross
+colnames(kina)=c('Cross',rownames(kina))
+AKin=kina[rownames(rr),rownames(rr)]
+
+rownames(kind)=kind$Cross
+colnames(kind)=c('Cross',rownames(kind))
+DKin=kind[rownames(rr),rownames(rr)]
+
+geno1=rr[,559:10854];
+
+AKin=data.matrix(AKin);
+DKin=data.matrix(DKin);
+library("corpcor")
+is.positive.definite(AKin)
+An=make.positive.definite(AKin)
+is.positive.definite(An)
+##########################
+y=rr[,1:6];
+AA=An;
+DD=DKin;
+it=50;
+tt=6;
+nu1=8;
+nu2=10;
+r11=numeric();r22=numeric();r33=numeric();r44=numeric();
+r55=numeric();r66=numeric();
+##########################################################################################
+for (m in 1:it)
+{
+  ##################################
+  y=rr[,1:6];t=tt;
+  pp1=sample(c(1:11),nu1);
+  pp2=sample(c(12:24),nu2);
+  yy=data.frame(ID=c(1:276),p1=p1p2$P1,p2=p1p2$P2,tr=y[,t]);
+  yy.1=yy[which(yy$p1%in%pp1 & yy$p2%in%pp1),]; 
+  yy.2=yy[which(yy$p1%in%pp2 & yy$p2%in%pp2),]; 
+  yy.3=yy[which((yy$p1%in%pp1 & yy$p2%in%pp2)|(yy$p2%in%pp1 & yy$p1%in%pp2) ),]; 
+  yy=yy.3;   
+  yy=yy[order(yy$ID),];
+  
+  IDE=yy$ID;
+  AA1=AA[IDE,IDE];
+  DD1=DD[IDE,IDE];
+  
+  geno2A=geno1[IDE,];
+  AA2=A.mat(geno2A);
+  DD2=D.mat(geno2A);
+  
+  rownames(AA1)=IDE;colnames(AA1)=IDE;
+  rownames(DD1)=IDE;colnames(DD1)=IDE;
+  rownames(AA2)=IDE;colnames(AA2)=IDE;
+  rownames(DD2)=IDE;colnames(DD2)=IDE;
+  ########################################### 
+  mat1=matrix(999,nu1,nu2);cc=1;
+  for (mm in 1:nu1)
+  {
+    for(nn in 1:nu2)
+    {
+      mat1[mm,nn]=yy.3$ID[cc];
+      cc=cc+1;
+    }
+  }
+  ###########################################
+  mat2=mat1[,c(nu2:1)];
+  #########Optimal Design########################################################################## 
+  yyt=yy;
+  extraction1=Diag(as.matrix(mat1));extraction2=Diag(as.matrix(mat2));
+  diag=c(extraction1$Diagonal[seq(1,length(extraction1$Diagonal),2)],
+         extraction2$Diagonal[seq(2,length(extraction1$Diagonal),2)]);
+  
+  sam=sort(diag);
+  which1=yyt$ID%in%sam; which2=!which1;    
+  
+  y0=yyt[,4];
+  y0[which2]=NA;
+  ETA5=list(list(K=AA1,model='RKHS'),list(K=DD1,model='RKHS'))
+  nIter=1000;
+  burnIn=100;
+  fm1=BGLR(y=y0,ETA=ETA5,nIter=nIter,burnIn=burnIn)
+  r1=cor(fm1$yHat[which2],yyt[,4][which2])
+  r11=c(r11,r1);
+  ##########Random Sample##########################################################################
+  yyt=yy;
+  sam=sample(yy$ID,length(sam));
+  which1=yyt$ID%in%sam; which2=!which1;
+  
+  y0=yyt[,4]; 
+  y0[which2]=NA; 
+  ETA5=list(list(K=AA1,model='RKHS'),list(K=DD1,model='RKHS'))
+  nIter=1000;
+  burnIn=100;
+  fm1=BGLR(y=y0,ETA=ETA5,nIter=nIter,burnIn=burnIn)
+  r2=cor(fm1$yHat[which2],yyt[,4][which2])
+  r22=c(r22,r2);  
+  
+  ########################CDMean & PEVMean#################################################################
+  if(tt==2){a=7.78;b=1.98;};
+  if(tt==5){a=414.67;b=50.54};
+  if(tt==6){a=3.30;b=2.32};
+  COV=a*AA2+b*DD2;
+  yyt=yy;
+  
+  K=COV;
+  ListTrain1<-GenAlgForSubsetSelectionNoTest(P=solve(K+1e-6*diag(ncol(K))),ntoselect=length(sam), InitPop=NULL,
+                                             npop=10, nelite=3, mutprob=.5, mutintensity = 1,
+                                             niterations=20,minitbefstop=10, tabu=F,tabumemsize = 0,plotiters=F,
+                                             lambda=1e-5,errorstat="CDMEANMM", mc.cores=3)
+  
+  ListTrain2<-GenAlgForSubsetSelectionNoTest(P=solve(K+1e-6*diag(ncol(K))),ntoselect=length(sam), InitPop=NULL,
+                                             npop=10, nelite=3, mutprob=.5, mutintensity = 1,
+                                             niterations=20,minitbefstop=10, tabu=F,tabumemsize = 0,plotiters=F,
+                                             lambda=1e-5,errorstat="PEVMEANMM", mc.cores=3)
+  
+  sam=as.vector(ListTrain1[[1]]);
+  which1=yyt$ID%in%sam; which2=!which1;
+  
+  y0=yyt[,4]; 
+  y0[which2]=NA; 
+  ETA5=list(list(K=AA1,model='RKHS'),list(K=DD1,model='RKHS'))
+  nIter=1000;
+  burnIn=100;
+  fm1=BGLR(y=y0,ETA=ETA5,nIter=nIter,burnIn=burnIn)
+  r3=cor(fm1$yHat[which2],yyt[,4][which2])
+  r33=c(r33,r3);
+  
+  ############PEVMean
+  sam=as.vector(ListTrain2[[1]]);
+  which1=yyt$ID%in%sam; which2=!which1;
+  
+  y0=yyt[,4]; 
+  y0[which2]=NA; 
+  ETA5=list(list(K=AA1,model='RKHS'),list(K=DD1,model='RKHS'))
+  nIter=1000;
+  burnIn=100;
+  fm1=BGLR(y=y0,ETA=ETA5,nIter=nIter,burnIn=burnIn)
+  r4=cor(fm1$yHat[which2],yyt[,4][which2])
+  r44=c(r44,r4);
+  ########################PAM#################################################################
+  c.mat <- 1- cov2cor(COV)
+  clust.result <- pam(x=c.mat,k=length(sam),diss=TRUE)
+  center <- clust.result$medoids
+  sam=center;
+  
+  which1=yyt$ID%in%sam; which2=!which1;
+  yyt=yy;
+  
+  y0=yyt[,4];
+  y0[which2]=NA; 
+  ETA5=list(list(K=AA1,model='RKHS'),list(K=DD1,model='RKHS'))
+  nIter=1000;
+  burnIn=100;
+  fm1=BGLR(y=y0,ETA=ETA5,nIter=nIter,burnIn=burnIn)
+  r5=cor(fm1$yHat[which2],yyt[,4][which2])
+  r55=c(r55,r5);
+  
+  ########################FURS#################################################################
+  tune=0.2;
+  tmp=COV;
+  tmp=cov2cor(tmp)
+  tmp[tmp>tune] = 1
+  tmp[tmp<tune] = 0
+  center <- FURS(tmp,length(sam),FALSE)
+  sam=center;
+  
+  which1=yyt$ID%in%sam; which2=!which1;
+  yyt=yy;
+  
+  y0=yyt[,4];
+  y0[which2]=NA; 
+  ETA5=list(list(K=AA1,model='RKHS'),list(K=DD1,model='RKHS'))
+  nIter=1000;
+  burnIn=100;
+  fm1=BGLR(y=y0,ETA=ETA5,nIter=nIter,burnIn=burnIn)
+  r6=cor(fm1$yHat[which2],yyt[,4][which2])
+  r66=c(r66,r6);  
+  
+  
+  
+}
+output=cbind(r11,r22,r33,r44,r55,r66);
+colnames(output)=c("MaxCD","Random","CDMean","PEVMean","PAM","FURS");
+output=output[,c(2,4,3,6,5,1)];
+write.table(output,file="Maize_FAC_GY_CDMean_PEVMean_50_New.txt",quote=F,col.names=T,
+            row.names=F)
+

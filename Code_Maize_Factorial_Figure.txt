@@ -1,0 +1,239 @@
+#############################################Figure for Maize FAC######################
+#############################################Figure for Maize FAC######################
+#############################################Figure for Maize FAC######################
+#############################################Figure for Maize FAC######################
+library("RColorBrewer")
+library("gplots")
+library(gridGraphics)
+library(gridExtra)
+grab_grob <- function(){
+  grid.echo()
+  grid.grab()
+}
+
+setwd("F:/Manuscript/Writing/All The Figures and Tables MoP_1/Fig.S7.Add/Factorial/")
+par(oma=c(0.5,0.5,0.5,0.5),mar=c(5,5,0,0),mgp=c(1.0,1,0),las=0)
+m=0.6;
+n=0.5;
+#####For flowering time##########################################################################
+Figure.data=read.table(file="Maize_DTA_FAC_50.txt",
+                       header=T,sep="\t")
+
+if(T){
+  start=0.40;
+  end=0.60;
+  inter=0.04;
+}
+
+
+Figure.data$ID=c(1:50);
+Figure.data=Figure.data[,c(7,1:6)];
+Figure.long=melt(Figure.data,id="ID")
+colnames(Figure.long)=c("ID","Method","Prediction_accuracy");
+
+pirateplot(formula = Prediction_accuracy ~ Method, data = Figure.long, xlab ="", ylab ="", 
+           main = "",
+           cex.lab=m,cex.axis = n,
+           # Choose your color palette, or give common color vector
+           pal = piratepal(palette="info2")[c(2,3,1,4:6)], bty="n",
+           
+           # Set transparency of the elements:
+           avg.line.o = 0.2,
+           bar.f.o = .8,
+           #bean.b.o = .3,
+           point.o = .9,
+           # Shape of point
+           point.pch = 1,point.cex=0,
+           bar.b.col="black",
+           bean.b.o = 0,
+           bean.f.o = 0,
+           inf.lwd=0.1,
+           inf.f.col="black",
+           inf.f.o=0.5,
+           inf.b.o=0.3,
+           #inf.p=c(1,seq(0.1,0.5,0.1)),
+           avg.line.lwd=0,
+           inf.method="se",
+           inf.disp="line",
+           width.max = 0.2,
+           #Background color
+           back.col = "white",gl.col="white",
+           theme=1,
+           yaxt="n",
+           xaxt="n",
+           ylim=c(start,end),xlim=c(0.5,6.5)
+)
+
+axis(1, at=seq(0,7,1),labels=rep("",8), las=2,tck=-0.001,cex.axis=n,lwd=0.01)
+#axis(2, pos=3,at=seq(start,end,inter),labels=seq(start,end,inter), las=2,tck=-0.01,cex.axis=n,lwd=0.01)
+
+ss=par("usr")[1]
+segments(0.07+ss, start, x1 = 0.07+ss, y1 = end,lwd=0.1)
+
+for(i in seq(start,end,inter))
+{
+  segments(x0 = 0+ss, y0 = i, x1 = 0.07+ss, y1 = i,lwd=0.1)
+  mtext(i, side=2,cex=n,at=i,line=0,las=2)
+}
+
+mtext("Prediction accuracy", side=2,cex=n,at=(end-start)/2+start,line=1,las=3)
+
+for(i in c(1:6))
+{
+  mtext(colnames(Figure.data)[i+1], side=1,cex=n,at=i,line=0.6,las=2)
+}
+
+
+
+text(2.0,end,"Flowering time",cex=n)
+g1 <- grab_grob()
+#####For ear height#################################################################################
+Figure.data=read.table(file="Maize_EH_FAC_50.txt",
+                       header=T,sep="\t")
+
+Figure.data$ID=c(1:50);
+Figure.data=Figure.data[,c(7,1:6)];
+Figure.long=melt(Figure.data,id="ID")
+colnames(Figure.long)=c("ID","Method","Prediction_accuracy");
+
+pirateplot(formula = Prediction_accuracy ~ Method, data = Figure.long, xlab ="", ylab ="", 
+           main = "",
+           cex.lab=m,cex.axis = n,
+           # Choose your color palette, or give common color vector
+           pal = piratepal(palette="info2")[c(2,3,1,4:6)], bty="n",
+           
+           # Set transparency of the elements:
+           avg.line.o = 0.2,
+           bar.f.o = .8,
+           #bean.b.o = .3,
+           point.o = .9,
+           # Shape of point
+           point.pch = 1,point.cex=0,
+           bar.b.col="black",
+           bean.b.o = 0,
+           bean.f.o = 0,
+           inf.lwd=0.1,
+           inf.f.col="black",
+           inf.f.o=0.5,
+           inf.b.o=0.3,
+           #inf.p=c(1,seq(0.1,0.5,0.1)),
+           avg.line.lwd=0,
+           inf.method="se",
+           inf.disp="line",
+           width.max = 0.2,
+           #Background color
+           back.col = "white",gl.col="white",
+           theme=1,
+           yaxt="n",
+           xaxt="n",
+           ylim=c(start,end),xlim=c(0.5,6.5)
+)
+
+axis(1, at=seq(0,7,1),labels=rep("",8), las=2,tck=-0.001,cex.axis=n,lwd=0.01)
+#axis(2, pos=3,at=seq(start,end,inter),labels=seq(start,end,inter), las=2,tck=-0.01,cex.axis=n,lwd=0.01)
+
+ss=par("usr")[1]
+segments(0.07+ss, start, x1 = 0.07+ss, y1 = end,lwd=0.1)
+
+for(i in seq(start,end,inter))
+{
+  segments(x0 = 0+ss, y0 = i, x1 = 0.07+ss, y1 = i,lwd=0.1)
+  mtext(i, side=2,cex=n,at=i,line=0,las=2)
+}
+
+mtext("Prediction accuracy", side=2,cex=n,at=(end-start)/2+start,line=1,las=3)
+
+for(i in c(1:6))
+{
+  mtext(colnames(Figure.data)[i+1], side=1,cex=n,at=i,line=0.6,las=2)
+}
+
+text(1.9,end,"Ear height",cex=n)
+g2 <- grab_grob()
+
+#####For grain yield#################################################################################
+Figure.data=read.table(file="Maize_GY_FAC_50.txt",
+                       header=T,sep="\t")
+
+if(T){
+  start=0.25;
+  end=0.45;
+  inter=0.05;
+}
+
+Figure.data$ID=c(1:50);
+Figure.data=Figure.data[,c(7,1:6)];
+Figure.long=melt(Figure.data,id="ID")
+colnames(Figure.long)=c("ID","Method","Prediction_accuracy");
+
+pirateplot(formula = Prediction_accuracy ~ Method, data = Figure.long, xlab ="", ylab ="", 
+           main = "",
+           cex.lab=m,cex.axis = n,
+           # Choose your color palette, or give common color vector
+           pal = piratepal(palette="info2")[c(2,3,1,4:6)], bty="n",
+           
+           # Set transparency of the elements:
+           avg.line.o = 0.2,
+           bar.f.o = .8,
+           #bean.b.o = .3,
+           point.o = .9,
+           # Shape of point
+           point.pch = 1,point.cex=0,
+           bar.b.col="black",
+           bean.b.o = 0,
+           bean.f.o = 0,
+           inf.lwd=0.1,
+           inf.f.col="black",
+           inf.f.o=0.5,
+           inf.b.o=0.3,
+           #inf.p=c(1,seq(0.1,0.5,0.1)),
+           avg.line.lwd=0,
+           inf.method="se",
+           inf.disp="line",
+           width.max = 0.2,
+           #Background color
+           back.col = "white",gl.col="white",
+           theme=1,
+           yaxt="n",
+           xaxt="n",
+           ylim=c(start,end),xlim=c(0.5,6.5)
+)
+
+axis(1, at=seq(0,7,1),labels=rep("",8), las=2,tck=-0.001,cex.axis=n,lwd=0.01)
+#axis(2, pos=3,at=seq(start,end,inter),labels=seq(start,end,inter), las=2,tck=-0.01,cex.axis=n,lwd=0.01)
+
+ss=par("usr")[1]
+segments(0.07+ss, start, x1 = 0.07+ss, y1 = end,lwd=0.1)
+
+for(i in seq(start,end,inter))
+{
+  segments(x0 = 0+ss, y0 = i, x1 = 0.07+ss, y1 = i,lwd=0.1)
+  mtext(i, side=2,cex=n,at=i,line=0,las=2)
+}
+
+mtext("Prediction accuracy", side=2,cex=n,at=(end-start)/2+start,line=1,las=3)
+
+for(i in c(1:6))
+{
+  mtext(colnames(Figure.data)[i+1], side=1,cex=n,at=i,line=0.6,las=2)
+}
+
+text(1.9,end,"Grain yield",cex=n)
+g3 <- grab_grob()
+
+#############################################################################################
+pdf("Figure3_Fac.pdf",width=4.8,height=2)
+
+lay <- grid.layout(nrow = 1, ncol=3,widths=c(1.5,1.5,1.5),heights=c(1.5))
+
+pushViewport(viewport(layout = lay))
+grid.draw(editGrob(g1, vp=viewport(layout.pos.row = 1, 
+                                   layout.pos.col = 1, clip=TRUE)))
+grid.draw(editGrob(g2, vp=viewport(layout.pos.row = 1, 
+                                   layout.pos.col = 2, clip=TRUE)))
+grid.draw(editGrob(g3, vp=viewport(layout.pos.row = 1, 
+                                   layout.pos.col = 3, clip=TRUE)))
+
+upViewport(1)
+
+dev.off()

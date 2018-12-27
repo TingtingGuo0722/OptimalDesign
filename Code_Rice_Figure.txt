@@ -1,0 +1,387 @@
+#############################################Figure for Rice######################
+#############################################Figure for Rice######################
+#############################################Figure for Rice######################
+#############################################Figure for Rice######################
+
+library("RColorBrewer")
+library("gplots")
+library(gridGraphics)
+library(gridExtra)
+grab_grob <- function(){
+  grid.echo()
+  grid.grab()
+}
+
+setwd("F:/Manuscript/Writing/All The Figures and Tables MoP_1/Fig.5.New/")
+mm=0.8;
+par(oma=c(0.5,0.5,0.5,0.5),mar=c(5,5,0,0),mgp=c(1.0,1,0),las=0)
+################################################Fig 1#############################################
+
+rr=read.table("Pheno.sanya.txt",header=T,sep="")
+kina=read.table("Matrix_Hybrid_All_Add_Define1.txt",header=F,sep="")
+kind=read.table("Matrix_Hybrid_All_Dom_Define1.txt",header=F,sep="")
+colnames(kina)=rr$ID;
+rownames(kina)=rr$ID;
+ir.pca <- prcomp(kina,center = TRUE,scale. = TRUE) 
+
+(ir.pca$sdev^2)[1]/sum(ir.pca$sdev^2)
+(ir.pca$sdev^2)[2]/sum(ir.pca$sdev^2)
+
+PCA=data.frame(ID=rr$ID,Group=rr$Group,PC1=predict(ir.pca)[,1],PC2=predict(ir.pca)[,2])
+
+plot(PCA$PC1,PCA$PC2,pch=19,col=c("dodgerblue","SandyBrown","Grey")[as.factor(PCA$Group)],cex=0.3,xlim=c(-120,40),ylim=c(-40,70),
+     bty="n",xaxt="n",yaxt="n",font.axis=1,font.lab=1,cex.lab=0.5,cex.axis=0.5,xlab="PC1 (32.04%)",ylab="PC2 (15.87%)")
+axis(1, pos=-40,font.axis=1,cex.axis=0.5,lwd=0.3,tck=-0.01,at=seq(-120,40,40),lab=seq(-120,40,40))
+axis(2, pos=-120,font.axis=1,cex.axis=0.5,lwd=0.3,tck=-0.01,at=seq(-40,60,20),lab=seq(-40,60,20))  
+legend(-110,70,c("Ind x Ind","Ind x Jap","Jap x Jap"),col=c("DodgerBlue","Grey","SandyBrown"),pch=19,bty="n",
+       pt.cex=0.3,cex=0.5,y.intersp =2,x.intersp =1)
+mtext("a",side=2,line=1.5,cex=mm,at=73,las=2)
+
+g1 <- grab_grob()
+################################################Fig 2#############################################
+
+rr=read.table("Pheno.sanya.txt",header=T,sep="")
+rr=rr[1:1439,];
+kina=read.table("Matrix_Hybrid_Indica_Add_Define1.txt",header=F,sep="")
+kind=read.table("Matrix_Hybrid_Indica_Dom_Define1.txt",header=F,sep="")
+colnames(kina)=rr$ID;
+rownames(kina)=rr$ID;
+ir.pca <- prcomp(kina,center = TRUE,scale. = TRUE) 
+(ir.pca$sdev^2)[1]/sum(ir.pca$sdev^2)
+(ir.pca$sdev^2)[2]/sum(ir.pca$sdev^2)
+PCA=data.frame(ID=rr$ID,Group=rr$Group,PC1=predict(ir.pca)[,1],PC2=predict(ir.pca)[,2])
+plot(PCA$PC1,PCA$PC2,pch=19,col=c("dodgerblue","SandyBrown","Grey")[as.factor(PCA$Group)],cex=0.3,xlim=c(-70,70),ylim=c(-50,50),
+     bty="n",xaxt="n",yaxt="n",font.axis=1,font.lab=1,cex.lab=0.5,cex.axis=0.5,xlab="PC1 (24.97%)",ylab="PC2 (15.92%)")
+axis(1, pos=-50,font.axis=1,cex.axis=0.5,lwd=0.3,tck=-0.01,at=seq(-70,70,35),lab=seq(-70,70,35))
+axis(2, pos=-70,font.axis=1,cex.axis=0.5,lwd=0.3,tck=-0.01,at=seq(-50,50,20),lab=seq(-50,50,20))  
+legend(-65,50,c("Ind x Ind"),col=c("DodgerBlue"),pch=19,bty="n",
+       pt.cex=0.3,cex=0.5,y.intersp =1,x.intersp =1)
+mtext("b",side=2,line=1.5,cex=mm,at=55,las=2)
+
+g2 <- grab_grob()
+
+################################################Fig 3#############################################
+library("devtools")
+library("yarrr")
+library("reshape2")
+
+par(oma=c(0.5,0.5,0.5,0.5),mar=c(5,5,0,0),mgp=c(1,1,0),las=0)
+
+#####For Grain weight##########################################################################
+Figure.data=read.table("Rice_GW_CDMean_PEVMean.txt",header=T,sep="\t")
+
+if(T){
+  start=0.54;
+  end=0.76;
+  inter=0.06;
+}
+
+m=0.6;
+n=0.5;
+Figure.data$ID=c(1:50);
+Figure.data=Figure.data[,c(6,1:5)];
+Figure.long=melt(Figure.data,id="ID")
+colnames(Figure.long)=c("ID","Method","Prediction_accuracy");
+
+pirateplot(formula = Prediction_accuracy ~ Method, data = Figure.long, xlab ="", ylab ="", 
+           main = "",
+           cex.lab=m,cex.axis = n,
+           # Choose your color palette, or give common color vector
+           pal = piratepal(palette="info2")[c(2,3,1,4:6)], bty="n",
+           
+           # Set transparency of the elements:
+           avg.line.o = 0.2,
+           bar.f.o = .8,
+           #bean.b.o = .3,
+           point.o = .9,
+           # Shape of point
+           point.pch = 1,point.cex=0,
+           bar.b.col="black",
+           bean.b.o = 0,
+           bean.f.o = 0,
+           inf.lwd=0.8,
+           inf.f.col="black",
+           inf.f.o=0.5,
+           inf.b.o=0.5,
+           #inf.p=c(1,seq(0.1,0.5,0.1)),
+           avg.line.lwd=0,
+           inf.method="se",
+           inf.disp="line",
+           width.max = 0.25,
+           #Background color
+           back.col = "white",gl.col="white",
+           theme=1,
+           yaxt="n",
+           xaxt="n",
+           ylim=c(start,end),xlim=c(0.5,5.5)
+)
+axis(1, at=seq(0,6,1),labels=rep("",7), las=2,tck=-0.01,cex.axis=n,lwd=0.01)
+#axis(2, pos=0,at=seq(start,end,inter),labels=seq(start,end,inter), las=2,tck=-0.01,cex.axis=n,lwd=0.01)
+ss=par("usr")[1]
+segments(0.07+ss, start, x1 = 0.07+ss, y1 = end,lwd=0.1)
+
+for(i in seq(start,end,inter))
+{
+  segments(x0 = 0+ss, y0 = i, x1 = 0.07+ss, y1 = i,lwd=0.1)
+  mtext(i, side=2,cex=n,at=i,line=0,las=2)
+}
+
+mtext("Prediction accuracy", side=2,cex=n,at=(end-start)/2+start,line=1,las=3)
+
+for(i in c(1:5))
+{
+  mtext(colnames(Figure.data)[i+1], side=1,cex=n,at=i,line=0.6,las=2)
+}
+
+
+text(1.85,end,"Grain weight",cex=n)
+mtext("c",side=2,line=1.0,cex=mm,at=0.768,las=2)
+
+g3 <- grab_grob()
+
+################################################Fig 4#############################################
+par(oma=c(0.5,0.5,0.5,0.5),mar=c(5,5,0,0),mgp=c(1,1,0),las=0)
+
+#####For Height##########################################################################
+Figure.data=read.table("Rice_HT_CDMean_PEVMean.txt",header=T,sep="\t")
+
+if(T){
+  start=0.54;
+  end=0.76;
+  inter=0.06;
+}
+
+m=0.6;
+n=0.5;
+Figure.data$ID=c(1:50);
+Figure.data=Figure.data[,c(6,1:5)];
+Figure.long=melt(Figure.data,id="ID")
+colnames(Figure.long)=c("ID","Method","Prediction_accuracy");
+
+pirateplot(formula = Prediction_accuracy ~ Method, data = Figure.long, xlab ="", ylab ="", 
+           main = "",
+           cex.lab=m,cex.axis = n,
+           # Choose your color palette, or give common color vector
+           pal = piratepal(palette="info2")[c(2,3,1,4:6)], bty="n",
+           
+           # Set transparency of the elements:
+           avg.line.o = 0.2,
+           bar.f.o = .8,
+           #bean.b.o = .3,
+           point.o = .9,
+           # Shape of point
+           point.pch = 1,point.cex=0,
+           bar.b.col="black",
+           bean.b.o = 0,
+           bean.f.o = 0,
+           inf.lwd=0.8,
+           inf.f.col="black",
+           inf.f.o=0.5,
+           inf.b.o=0.5,
+           #inf.p=c(1,seq(0.1,0.5,0.1)),
+           avg.line.lwd=0,
+           inf.method="se",
+           inf.disp="line",
+           width.max = 0.25,
+           #Background color
+           back.col = "white",gl.col="white",
+           theme=1,
+           yaxt="n",
+           xaxt="n",
+           ylim=c(start,end),xlim=c(0.5,5.5)
+)
+axis(1, at=seq(0,6,1),labels=rep("",7), las=2,tck=-0.01,cex.axis=n,lwd=0.01)
+#axis(2, pos=0,at=seq(start,end,inter),labels=seq(start,end,inter), las=2,tck=-0.01,cex.axis=n,lwd=0.01)
+ss=par("usr")[1]
+segments(0.07+ss, start, x1 = 0.07+ss, y1 = end,lwd=0.1)
+
+for(i in seq(start,end,inter))
+{
+  segments(x0 = 0+ss, y0 = i, x1 = 0.07+ss, y1 = i,lwd=0.1)
+  mtext(i, side=2,cex=n,at=i,line=0,las=2)
+}
+
+mtext("Prediction accuracy", side=2,cex=n,at=(end-start)/2+start,line=1,las=3)
+
+for(i in c(1:5))
+{
+  mtext(colnames(Figure.data)[i+1], side=1,cex=n,at=i,line=0.6,las=2)
+}
+
+text(1.25,end,"Height",cex=n)
+mtext("d",side=2,line=1.0,cex=mm,at=0.768,las=2)
+
+g4 <- grab_grob()
+
+################################################Fig 5#############################################
+par(oma=c(0.5,0.5,0.5,0.5),mar=c(5,5,0,0),mgp=c(1,1,0),las=0)
+
+#####For Heading date##########################################################################
+Figure.data=read.table("Rice_HD_CDMean_PEVMean.txt",header=T,sep="\t")
+
+if(T){
+  start=0.62;
+  end=0.82;
+  inter=0.06;
+}
+
+m=0.6;
+n=0.5;
+Figure.data$ID=c(1:50);
+Figure.data=Figure.data[,c(6,1:5)];
+Figure.long=melt(Figure.data,id="ID")
+colnames(Figure.long)=c("ID","Method","Prediction_accuracy");
+
+pirateplot(formula = Prediction_accuracy ~ Method, data = Figure.long, xlab ="", ylab ="", 
+           main = "",
+           cex.lab=m,cex.axis = n,
+           # Choose your color palette, or give common color vector
+           pal = piratepal(palette="info2")[c(2,3,1,4:6)], bty="n",
+           
+           # Set transparency of the elements:
+           avg.line.o = 0.2,
+           bar.f.o = .8,
+           #bean.b.o = .3,
+           point.o = .9,
+           # Shape of point
+           point.pch = 1,point.cex=0,
+           bar.b.col="black",
+           bean.b.o = 0,
+           bean.f.o = 0,
+           inf.lwd=0.8,
+           inf.f.col="black",
+           inf.f.o=0.5,
+           inf.b.o=0.5,
+           #inf.p=c(1,seq(0.1,0.5,0.1)),
+           avg.line.lwd=0,
+           inf.method="se",
+           inf.disp="line",
+           width.max = 0.25,
+           #Background color
+           back.col = "white",gl.col="white",
+           theme=1,
+           yaxt="n",
+           xaxt="n",
+           ylim=c(start,end),xlim=c(0.5,5.5)
+)
+axis(1, at=seq(0,6,1),labels=rep("",7), las=2,tck=-0.01,cex.axis=n,lwd=0.01)
+#axis(2, pos=0,at=seq(start,end,inter),labels=seq(start,end,inter), las=2,tck=-0.01,cex.axis=n,lwd=0.01)
+ss=par("usr")[1]
+segments(0.07+ss, start, x1 = 0.07+ss, y1 = end,lwd=0.1)
+
+for(i in seq(start,end,inter))
+{
+  segments(x0 = 0+ss, y0 = i, x1 = 0.07+ss, y1 = i,lwd=0.1)
+  mtext(i, side=2,cex=n,at=i,line=0,las=2)
+}
+
+mtext("Prediction accuracy", side=2,cex=n,at=(end-start)/2+start,line=1,las=3)
+
+for(i in c(1:5))
+{
+  mtext(colnames(Figure.data)[i+1], side=1,cex=n,at=i,line=0.6,las=2)
+}
+
+
+text(1.85,end,"Heading date",cex=n)
+mtext("e",side=2,line=1.0,cex=mm,at=0.83,las=2)
+
+g5 <- grab_grob()
+
+################################################Fig 6#############################################
+par(oma=c(0.5,0.5,0.5,0.5),mar=c(5,5,0,0),mgp=c(1,1,0),las=0)
+
+#####For Grain length##########################################################################
+Figure.data=read.table("Rice_GL_CDMean_PEVMean.txt",header=T,sep="\t")
+
+if(T){
+  start=0.62;
+  end=0.82;
+  inter=0.06;
+}
+
+m=0.6;
+n=0.5;
+Figure.data$ID=c(1:50);
+Figure.data=Figure.data[,c(6,1:5)];
+Figure.long=melt(Figure.data,id="ID")
+colnames(Figure.long)=c("ID","Method","Prediction_accuracy");
+
+pirateplot(formula = Prediction_accuracy ~ Method, data = Figure.long, xlab ="", ylab ="", 
+           main = "",
+           cex.lab=m,cex.axis = n,
+           # Choose your color palette, or give common color vector
+           pal = piratepal(palette="info2")[c(2,3,1,4:6)], bty="n",
+           
+           # Set transparency of the elements:
+           avg.line.o = 0.2,
+           bar.f.o = .8,
+           #bean.b.o = .3,
+           point.o = .9,
+           # Shape of point
+           point.pch = 1,point.cex=0,
+           bar.b.col="black",
+           bean.b.o = 0,
+           bean.f.o = 0,
+           inf.lwd=0.8,
+           inf.f.col="black",
+           inf.f.o=0.5,
+           inf.b.o=0.5,
+           #inf.p=c(1,seq(0.1,0.5,0.1)),
+           avg.line.lwd=0,
+           inf.method="se",
+           inf.disp="line",
+           width.max = 0.25,
+           #Background color
+           back.col = "white",gl.col="white",
+           theme=1,
+           yaxt="n",
+           xaxt="n",
+           ylim=c(start,end),xlim=c(0.5,5.5)
+)
+axis(1, at=seq(0,6,1),labels=rep("",7), las=2,tck=-0.01,cex.axis=n,lwd=0.01)
+#axis(2, pos=0,at=seq(start,end,inter),labels=seq(start,end,inter), las=2,tck=-0.01,cex.axis=n,lwd=0.01)
+ss=par("usr")[1]
+segments(0.07+ss, start, x1 = 0.07+ss, y1 = end,lwd=0.1)
+
+for(i in seq(start,end,inter))
+{
+  segments(x0 = 0+ss, y0 = i, x1 = 0.07+ss, y1 = i,lwd=0.1)
+  mtext(i, side=2,cex=n,at=i,line=0,las=2)
+}
+
+mtext("Prediction accuracy", side=2,cex=n,at=(end-start)/2+start,line=1,las=3)
+
+for(i in c(1:5))
+{
+  mtext(colnames(Figure.data)[i+1], side=1,cex=n,at=i,line=0.6,las=2)
+}
+
+
+text(1.85,end,"Grain length",cex=n)
+mtext("f",side=2,line=1.0,cex=mm,at=0.83,las=2)
+
+g6 <- grab_grob()
+#############################################################################################
+#pdf("Figure5.pdf",width=5,height=4)
+png("Figure5.png",width=5,height=4,units="in",res=600)
+
+lay <- grid.layout(nrow = 2, ncol=3,widths=c(1.8,1.2,1.2),heights=c(1.8,1.8))
+
+pushViewport(viewport(layout = lay))
+grid.draw(editGrob(g1, vp=viewport(layout.pos.row = 1, 
+                                   layout.pos.col = 1, clip=TRUE)))
+grid.draw(editGrob(g2, vp=viewport(layout.pos.row = 2, 
+                                   layout.pos.col = 1, clip=TRUE)))
+grid.draw(editGrob(g3, vp=viewport(layout.pos.row = 1, 
+                                   layout.pos.col = 2, clip=TRUE)))
+grid.draw(editGrob(g4, vp=viewport(layout.pos.row = 2, 
+                                   layout.pos.col = 2, clip=TRUE)))
+grid.draw(editGrob(g5, vp=viewport(layout.pos.row = 1, 
+                                   layout.pos.col = 3, clip=TRUE)))
+grid.draw(editGrob(g6, vp=viewport(layout.pos.row = 2, 
+                                   layout.pos.col = 3, clip=TRUE)))
+upViewport(1)
+
+dev.off()
+

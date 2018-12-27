@@ -1,0 +1,316 @@
+#########################################Wheat_Fac############################################################
+#########################################Wheat_Fac############################################################
+#########################################Wheat_Fac############################################################
+#########################################Wheat_Fac############################################################
+
+
+################################wheat##Diallel##n=72##prediction##############################################
+setwd("F:/Manuscript/Writing/All The Figures and Tables MoP_1/Fig.4.New/Input_Files/Factorial/");
+source("Code_diag.txt")
+source("Code_FURS.txt")
+library("plyr")
+library("sommer")
+library("cluster")
+library("STPGA")
+#############################################################################################################
+#Rank of Inbreds
+#############################################################################################################
+
+rr=read.table("wheat.grm",header=F,sep="")
+mat=matrix(999,135,135)
+c=1;
+for(i in 1:135)
+{
+  for(j in 1:i)
+  {
+    mat[i,j]=rr[c,4];
+    mat[j,i]=mat[i,j];
+    c=c+1;
+  }
+}
+
+v1=paste("M",c(1:15),sep="");
+v2=paste("F",c(1:120),sep="");
+
+rownames(mat)=c(v2,v1);
+colnames(mat)=c(v2,v1);
+
+##rank all inbreds####
+MM=c("M2","M5","M6","M7","M8","M9","M10","M11","M12","M13","M14","M15");
+FM=c("F26","F32","F89","F119","F75","F41","F20","F95","F97","F6","F22","F44","F12","F47","F59","F83",
+     "F1","F98","F14","F107","F77","F46","F99","F118","F60","F96","F91","F42","F16","F80","F71","F8",
+     "F39","F7","F86");
+
+Temp_M=mat[MM,MM];
+diss=as.dist(1-cov2cor(Temp_M))
+t=hclust(diss,method="centroid")
+rank.name.M=t$labels[t$order];
+
+Temp_FM=mat[FM,FM];
+diss=as.dist(1-cov2cor(Temp_FM))
+t=hclust(diss,method="centroid")
+rank.name.FM=rev(t$labels[t$order]);
+
+Temp_all=mat;
+diss=as.dist(1-cov2cor(Temp_all))
+t=hclust(diss,method="centroid")
+rank.name.all=rev(t$labels[t$order]);
+
+
+rank=c(rank.name.M,rank.name.FM);
+
+#############################################################################################################
+#Preprocess
+#############################################################################################################
+
+data=matrix(999,1081,2);c=1;
+for (i in 1:46)
+{
+  for(j in (i+1):47)
+  {
+    data[c,1]=rank[i];
+    data[c,2]=rank[j];
+    c=c+1;
+  }
+}
+
+origin=data.frame(V1=c(paste("F",1:120,sep=""),paste("M",1:15,sep="")),V2=c(1:135))
+data1=data.frame(V1=data[,1]);
+data2=data.frame(V1=data[,2]);
+plyr1=join(data1,origin,by="V1");
+plyr2=join(data2,origin,by="V1");
+Newset=cbind(plyr1[,2],plyr2[,2]);
+Newset.1=cbind(apply(Newset,1,min),apply(Newset,1,max))
+Newset.2=paste(Newset.1[,1],Newset.1[,2],sep="x");
+Newset.1=cbind(Newset.1,Newset.2);
+
+#############################################################################################################
+#Phenotype,Genotype
+#############################################################################################################
+
+ID=read.table("ID.txt",header=F,sep="")
+Pheno_total=read.table("Pheno_9180_True_Value.txt",header=F,sep="")
+Geno_A=read.table("Geno_A_9180_2560.txt",header=F,sep="")
+Geno_D=read.table("Geno_D_9180_2560.txt",header=F,sep="")
+colnames(Pheno_total)="phe";
+Pheno_tot=cbind(ID,Pheno_total);
+row.names(Pheno_tot)=Pheno_tot$V3;
+
+Pheno_sub=Pheno_tot[Newset.2,];
+
+row.names(Geno_A)=Pheno_tot$V3;
+Geno_A=Geno_A[,-1];
+row.names(Geno_D)=Pheno_tot$V3;
+Geno_D=Geno_D[,-1];
+GenoA_sub=Geno_A[Newset.2,];
+GenoD_sub=Geno_D[Newset.2,];
+
+y=Pheno_sub[,4];
+Geno_A_47=GenoA_sub;
+Geno_D_47=GenoD_sub;
+
+#############################################################################################################
+#Preprocess
+#############################################################################################################
+
+p1p2=matrix(999,1081,2)
+c=1;
+for(i in 1:46){
+  for(j in (i+1):47){
+    p1p2[c,1]=i;
+    p1p2[c,2]=j;
+    c=c+1;
+  }
+}
+
+colnames(p1p2)=c("P1","P2")  
+
+rownames(Geno_A_47)=1:1081;
+rownames(Geno_D_47)=1:1081;
+
+#############################################################################################################
+#Parameter for prediction
+#############################################################################################################
+
+it=30;
+nu1=8;
+nu2=30;
+r11=numeric();r22=numeric(); r33=numeric(); r44=numeric();r55=numeric();r66=numeric();
+
+for (m in 1:it)
+{
+  ##################################  
+  pp1=sort(sample(1:12,nu1));
+  pp2=sort(sample(13:47,nu2));
+  yy=data.frame(ID=c(1:1081),p1=p1p2[,1],p2=p1p2[,2],tr=y);
+  yy.1=yy[which(yy$p1%in%pp1 & yy$p2%in%pp1),]; yy.1$Q1=1;yy.1$Q2=0;yy.1$Q3=0;
+  yy.2=yy[which(yy$p1%in%pp2 & yy$p2%in%pp2),]; yy.2$Q1=0;yy.2$Q2=1;yy.2$Q3=0;
+  yy.3=yy[which((yy$p1%in%pp1 & yy$p2%in%pp2)|(yy$p2%in%pp1 & yy$p1%in%pp2) ),]; 
+  yy.3$Q1=0;yy.3$Q2=0;yy.3$Q3=1;
+  
+  yy=yy.3; 
+  
+  IDE=yy$ID;
+  geno1a=Geno_A_47[IDE,];
+  geno1d=Geno_D_47[IDE,];
+  
+  AA=A.mat(geno1a);
+  DD=D.mat(geno1a);
+  
+  rownames(geno1a)=c(1:dim(yy)[1]);
+  rownames(geno1d)=c(1:dim(yy)[1]);
+  rownames(AA)=c(1:dim(yy)[1]); colnames(AA)=rownames(AA);
+  rownames(DD)=c(1:dim(yy)[1]); colnames(DD)=rownames(DD);
+  
+  yya=data.frame(ID=c(1:dim(yy)[1]),tr=yy[,4],yy[,5:7]); 
+  yyt=yya;
+  
+  ###########################################    
+  ########################################### 
+  
+  mat1=matrix(999,nu1,nu2);cc=1;
+  for (mm in 1:nu1)
+  {
+    for(nn in 1:nu2)
+    {
+      mat1[mm,nn]=yyt$ID[cc];
+      cc=cc+1;
+    }
+  }
+  
+  mat2=mat1[,c(nu2:1)];
+  
+  #############################################################################################
+  #MaxCD
+  #############################################################################################  
+  yyt=yya;
+  extraction1=Diag(as.matrix(mat1));extraction2=Diag(as.matrix(mat2));
+  diag=c(extraction1$Diagonal[seq(1,length(extraction1$Diagonal),2)],
+         extraction2$Diagonal[seq(2,length(extraction1$Diagonal),2)]);
+  sam=sort(diag);
+  which1=yyt$ID%in%sam; which2=!which1;
+  
+  yNa=yyt[,2]; whichNa=which2;
+  yNa[whichNa]=NA
+  
+  ETA5=list(list(X=geno1a,model='BL'),list(X=geno1d,model='BL'))
+  nIter=1000;
+  burnIn=100;
+  fm1=BGLR(y=yNa,ETA=ETA5,nIter=nIter,burnIn=burnIn)
+  r1=cor(fm1$yHat[fm1$whichNa],yyt[,2][whichNa])
+  r11=c(r11,r1);
+  
+  #############################################################################################
+  #RS
+  #############################################################################################
+  
+  yyt=yya;
+  sam=sample(c(1:dim(yy)[1]),length(sam));
+  which1=yyt$ID%in%sam; which2=!which1;
+  
+  yNa=yyt[,2]; whichNa=which2;
+  yNa[whichNa]=NA
+  
+  ETA5=list(list(X=geno1a,model='BL'),list(X=geno1d,model='BL'))
+  nIter=1000;
+  burnIn=100;
+  fm1=BGLR(y=yNa,ETA=ETA5,nIter=nIter,burnIn=burnIn)
+  r2=cor(fm1$yHat[fm1$whichNa],yyt[,2][whichNa])
+  r22=c(r22,r2); 
+  #############################################################################################
+  #CDMean and PEVMean
+  #############################################################################################   
+  COV=0.06*AA+0.02*DD; 
+  K=COV;
+  
+  ListTrain1<-GenAlgForSubsetSelectionNoTest(P=solve(K+1e-6*diag(ncol(K))),ntoselect=length(sam), InitPop=NULL,
+                                             npop=10, nelite=3, mutprob=.5, mutintensity = 1,
+                                             niterations=20,minitbefstop=10, tabu=F,tabumemsize = 0,plotiters=F,
+                                             lambda=1e-5,errorstat="CDMEANMM", mc.cores=3)
+  
+  ListTrain2<-GenAlgForSubsetSelectionNoTest(P=solve(K+1e-6*diag(ncol(K))),ntoselect=length(sam), InitPop=NULL,
+                                             npop=10, nelite=3, mutprob=.5, mutintensity = 1,
+                                             niterations=20,minitbefstop=10, tabu=F,tabumemsize = 0,plotiters=F,
+                                             lambda=1e-5,errorstat="PEVMEANMM", mc.cores=3)
+  
+  yyt=yya;
+  sam=as.vector(ListTrain1[[1]]);
+  which1=yyt$ID%in%sam; which2=!which1;
+  yNa=yyt[,2]; whichNa=which2;
+  yNa[whichNa]=NA
+  
+  ETA5=list(list(X=geno1a,model='BL'),list(X=geno1d,model='BL'))
+  nIter=1000;
+  burnIn=100;
+  fm1=BGLR(y=yNa,ETA=ETA5,nIter=nIter,burnIn=burnIn)
+  r3=cor(fm1$yHat[fm1$whichNa],yyt[,2][whichNa])
+  r33=c(r33,r3); 
+  
+  ############PEVMean
+  sam=as.vector(ListTrain2[[1]]);
+  which1=yyt$ID%in%sam; which2=!which1;
+  yyt=yya;
+  
+  yNa=yyt[,2]; whichNa=which2;
+  yNa[whichNa]=NA
+  
+  ETA5=list(list(X=geno1a,model='BL'),list(X=geno1d,model='BL'))
+  nIter=1000;
+  burnIn=100;
+  fm1=BGLR(y=yNa,ETA=ETA5,nIter=nIter,burnIn=burnIn)
+  r4=cor(fm1$yHat[fm1$whichNa],yyt[,2][whichNa])
+  r44=c(r44,r4); 
+  
+  
+  #############################################################################################
+  #PAM
+  #############################################################################################  
+  yyt=yya;
+  
+  c.mat <- 1- cov2cor(COV)
+  clust.result <- pam(x=c.mat,k=length(sam),diss=TRUE)
+  center <- clust.result$medoids
+  sam=yyt$ID[as.numeric(center)];
+  
+  which1=yyt$ID%in%sam; which2=!which1;
+  yNa=yyt[,2]; whichNa=which2;
+  yNa[whichNa]=NA
+  
+  library("BGLR")
+  ETA5=list(list(X=geno1a,model='BL'),list(X=geno1d,model='BL'))
+  nIter=1000;
+  burnIn=100;
+  fm1=BGLR(y=yNa,ETA=ETA5,nIter=nIter,burnIn=burnIn)
+  r5=cor(fm1$yHat[fm1$whichNa],yyt[,2][whichNa])
+  r55=c(r55,r5); 
+  
+  #############################################################################################
+  #FURS
+  #############################################################################################
+  
+  tune=-0.010;
+  tmp=cov2cor(COV)
+  tmp[tmp>tune] = 1
+  tmp[tmp<tune] = 0
+  center <- FURS(tmp,length(sam),FALSE)
+  sam=yyt$ID[as.numeric(center)];
+  
+  which1=yyt$ID%in%sam; which2=!which1;
+  yNa=yyt[,2]; whichNa=which2;
+  yNa[whichNa]=NA
+  
+  library("BGLR")
+  ETA5=list(list(X=geno1a,model='BL'),list(X=geno1d,model='BL'))
+  nIter=1000;
+  burnIn=100;
+  fm1=BGLR(y=yNa,ETA=ETA5,nIter=nIter,burnIn=burnIn)
+  r6=cor(fm1$yHat[fm1$whichNa],yyt[,2][whichNa])
+  r66=c(r66,r6); 
+  
+}
+
+output=cbind(r11,r22,r33,r44,r55,r66);
+colnames(output)=c("MaxCD","Random","CDMean","PEVMean","PAM","FURS");
+write.table(output,file="Wheat_GY_CDMean_PEVMean_Fac.txt",quote=F,col.names=T,
+            row.names=F)
+
